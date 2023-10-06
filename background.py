@@ -9,7 +9,7 @@ from os import system
 async def connect_and_reconnect():
     while True:
         try:
-            async with websockets.connect("ws://localhost:8765") as websocket:
+            async with websockets.connect("ws://localhost:3000") as websocket:
                 msg = {
                     "mode": "background",
                     "hostname": platform.node()
@@ -21,9 +21,8 @@ async def connect_and_reconnect():
                     data = json.loads(message)
                     try:
                         data = clientcommand_schema.validate(data)
-                        match data["command"]:
-                            case "logoff":
-                                system("qdbus org.kde.ksmserver /KSMServer logout 1 0 1")
+                        if data["command"] == "logoff":
+                            system("qdbus org.kde.ksmserver /KSMServer logout 1 0 1")
                     except SchemaError:
                         print("False Schema")
         except websockets.ConnectionClosedError:

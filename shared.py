@@ -1,4 +1,4 @@
-from schema import Schema, And, Use, Or
+from schema import Schema, And, Use, Or, Optional
 
 """
 import threading
@@ -27,23 +27,14 @@ login_schema = Schema({
 )
 
 authorised_schema = Schema({
-    "authorised": bool
+    "response": lambda m: m in ("authorised", "unauthorised")
     }
 )
 
 command_schema = Schema({
     "command": And(str, Use(str.lower),
                 lambda m: m in ("logoff" , "rm", "ls steam", "ls lutris")),
-    "target": [str]
-    }
-)
-listclients_schema = Schema({
-    "command": lambda m: m in ("listclients")
-})
-
-clientcommand_schema = Schema({
-    "command": And(str, Use(str.lower),
-                lambda m: m in ("logoff" , "rm", "ls steam", "ls lutris"))
+    "target": Optional([str])
     }
 )
 

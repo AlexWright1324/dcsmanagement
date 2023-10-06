@@ -8,7 +8,7 @@ from schema import SchemaError
 async def connect_and_reconnect():
     while True:
         try:
-            async with websockets.connect("ws://localhost:8765") as websocket:
+            async with websockets.connect("ws://localhost:3000") as websocket:
                 msg = {
                     "mode": "admin",
                     "hostname": platform.node()
@@ -19,17 +19,17 @@ async def connect_and_reconnect():
                 authorised = False
 
                 while not authorised:
-                    password = hash(input("Enter password: "))
+                    password = input("Enter password: ")
                     login = {
                         "login": password
                     }
                     await websocket.send(json.dumps(login))
 
                     data = await websocket.recv()
-                    data = json.loads(data)
                     try:
+                        data = json.loads(data)
                         data = authorised_schema.validate(data)
-                        if data:
+                        if data["response"] == "authorised":
                             authorised = True
                             while True:
                                 command = input("Enter a command: ")
