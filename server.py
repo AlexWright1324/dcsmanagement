@@ -1,65 +1,39 @@
-import shared
-import socket
-import threading
+import asyncio
+import websockets
 import json
 
-printqueue = shared.printqueue()
+clients = {}
 
-HOST, PORT = "", 3001
+async def handle_client(websocket, path):
+    try:
+        hostname = await websocket.recv()
+        
+        client = Client(hostname)
+        clients[websocket] = client
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_socket.bind((HOST, PORT))
-
-server_socket.listen(100)
-clients = []
-
-class Client:
-    def __init__(self, socket, hostname):
-        self.socket = socket
-        self.hostname = hostname
-        self.authorised = False
-
-def handler(client: Client):
-    while True:
-        try:
-            data = client.socket.recv(1024).decode('utf-8')
-            if not data:
+        print(f"{client.hostname} connected")
+        
+        async for message in websocket:
+            if message == "xa6Ev8ae":
+                client.authorised = True
+                print(f"{client.hostname} authorised")
+                await websocket.send("authorised")
+            elif message == "list":
+                if not client.authorised:
+                    await websocket.send("unauthorised")
+                else:
+                    hostnames = json.dumps([i.toJSON() for i in clients.values()])
+                    await websocket.send(hostnames)
+            else:
                 break
+    except Exception as e:
+        print(f"Error with client from {hostname}: {e}")
+    finally:
+        del clients[websocket]
+        print(f"{hostname} disconnected")
 
-            printqueue.put(f"Received from {client.hostname}: {data}")
+# Start the WebSocket server
+start_server = websockets.serve(handle_client, "localhost", 8765)
 
-            data = json.loads(data)
-
-            for recipient in clients:
-                if client != recipient:
-                    recipient.send(data.encode('utf-8'))
-
-        except Exception as e:
-            printqueue.put(f"Error: {str(e)}")
-            break
-
-    clients.remove(client)
-    client.socket.close()
-
-while True:
-    printqueue.put("Waiting for a connection...")
-    client_socket, address = server_socket.accept()
-
-    data = client_socket.recv(1024).decode('utf-8')
-    if data.startswith("hostname:"):
-        hostname = data[9:]
-
-        printqueue.put(f"Accepted connection from {hostname} at {address[0]}:{address[1]}")
-
-        client = Client(client_socket, hostname)
-
-        clients.append(client)
-
-        client_handler = threading.Thread(target=handler, args=(client,))
-        client_handler.start()
-    else:
-        printqueue.put(f"Bad hostname from {address}")
-        client_socket.close()
-
-
+asyncio.get_event_loop().run_until_complete(start_server)
+asyncio.get_event_loop().run_forever()
