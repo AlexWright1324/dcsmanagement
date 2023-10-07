@@ -33,11 +33,13 @@ authorised_schema = Schema({
 
 command_schema = Schema({
     "command": And(str, Use(str.lower),
-                lambda m: m in ("logoff" , "rm", "ls steam", "ls lutris")),
-    "target": Optional([str])
+                lambda m: m in ("logoff" , "listclient")),
+    Optional("targets"): [str]
     }
 )
 
-admin_schema = Or(login_schema, command_schema)
-
-#response_schema = BASED ON TARGETS SERVER / CLIENT
+action_schema = Schema({
+    "action": And(str, Use(str.lower),
+                lambda m: m in ("logoff")),
+    }
+)

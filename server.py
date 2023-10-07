@@ -2,14 +2,13 @@ import asyncio
 import websockets
 import json
 from schema import SchemaError
-from shared import initial_schema, admin_schema
+from shared import initial_schema, login_schema, command_schema
 
 clients = {}
 
 async def handle_client(websocket, _path):
     try:
         data = json.loads(await websocket.recv())
-        print(data)
         data = initial_schema.validate(data)
         client = {"hostname": data["hostname"]}
         print(f"{client['hostname']} connected")
@@ -35,8 +34,8 @@ async def handle_background(websocket, client):
 async def handle_admin(websocket, admin):
     async for message in websocket:
         message = json.loads(message)
-        message = admin_schema.validate(message)
-        if "login" in message:
+        if login_schema.is_valid(message):
+            message = login_schema.validate(message)
             if admin["authorised"]:
                 print(f"{admin.hostname} already authorised")
                 response = {"response" : "authorised"}
@@ -50,6 +49,7 @@ async def handle_admin(websocket, admin):
                 response = {"response" : "unauthorised"}
                 await websocket.send(json.dumps(response))
         elif admin["authorised"]:
+            message = command_schema.validate(message)
             if message["command"] == "listclients":
                 hostnames = {"hostnames": [i["hostname"] for i in clients.values()]}
                 await websocket.send(json.dumps(hostnames))
@@ -60,9 +60,10 @@ async def handle_admin(websocket, admin):
                         if client["hostname"] in message["targets"]:
                             await sock.send(json.dumps(data))
                 else:
-                    woadmin = clients.keys()
-                    woadmin.remove(admin["hostname"])
-                    await websocket.broadcast(woadmin, json.dumps(data))
+                    woadmin = list(clients.keys())
+                    if admin["hostname"] in woadmin:
+                        woadmin.remove(admin["hostname"])
+                    websockets.broadcast(woadmin, json.dumps(data))
         else:
             response = {"response" : "unauthorised"}
             await websocket.send(json.dumps(response))

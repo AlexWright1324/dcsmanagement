@@ -2,7 +2,7 @@ import asyncio
 import websockets
 import platform
 import json
-from shared import clientcommand_schema
+from shared import action_schema
 from schema import SchemaError
 from os import system
 
@@ -20,9 +20,9 @@ async def connect_and_reconnect():
                 async for message in websocket:
                     data = json.loads(message)
                     try:
-                        data = clientcommand_schema.validate(data)
-                        if data["command"] == "logoff":
-                            system("qdbus org.kde.ksmserver /KSMServer logout 1 0 1")
+                        data = action_schema.validate(data)
+                        if data["action"] == "logoff":
+                            system("qdbus-qt5 org.kde.ksmserver /KSMServer logout 1 0 1")
                     except SchemaError:
                         print("False Schema")
         except websockets.ConnectionClosedError:
