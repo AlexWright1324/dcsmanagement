@@ -2,7 +2,7 @@ import asyncio
 import websockets
 import json
 from schema import SchemaError
-from shared import initial_schema, login_schema, command_schema
+from shared import initial_schema, command_schema
 
 clients = {}
 
