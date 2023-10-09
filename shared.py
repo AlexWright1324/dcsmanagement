@@ -1,4 +1,4 @@
-from schema import Schema, And, Use, Or, Optional
+from schema import Schema, Or, Optional
 
 """
 import threading
@@ -14,18 +14,38 @@ def printqueue() -> Queue:
     return printqueue
 """
 
-initial_schema = Schema({
-    "mode": And(str, Use(str.lower),
-                lambda m: m in ("background" , "admin")),
+initial_schema = Schema(Or({
+    "mode": "background",
     "hostname": str,
-    }
-)
+}, {
+    "mode": "admin",
+    "hostname": str,
+    "password": str
+}))
 
-login_schema = Schema({
-    "login": str
-    }
-)
+command_client_schema = Schema({
+    "command": str,
+    "args": Optional([str])
+})
 
+command_server_schema = Schema({
+    "targets": [str],
+    "command": command_client_schema
+})
+
+client_response_schema = Schema(Or({
+    "error": None,
+    "result": dict # TODO
+}, {
+    "error": str
+}, only_one=True))
+
+server_response_schema = Schema([{
+    "hostname": str,
+    "response": client_response_schema
+}])
+
+"""
 authorised_schema = Schema({
     "response": lambda m: m in ("authorised", "unauthorised")
     }
@@ -43,3 +63,4 @@ action_schema = Schema({
                 lambda m: m in ("logoff")),
     }
 )
+"""
