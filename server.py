@@ -2,7 +2,7 @@ import asyncio
 import websockets
 import json
 from schema import SchemaError
-from shared import initial_schema, command_schema
+from shared import initial_schema, command_server_schema
 
 clients = {}
 
@@ -37,8 +37,7 @@ async def handle_client(websocket, _path):
 
 async def handle_background(websocket, client):
     try:
-        while True:
-            await asyncio.sleep(0)
+        await websocket.wait_closed()
     except websockets.exceptions.ConnectionClosedError:
         pass
 
@@ -46,21 +45,17 @@ async def handle_background(websocket, client):
 async def handle_admin(websocket, admin):
     async for message in websocket:
         message = json.loads(message)
-        message = command_schema.validate(message)
+        message = command_server_schema.validate(message)
         if message["command"] == "listclients":
             hostnames = {"hostnames": [i["hostname"] for i in clients.values()]}
             await websocket.send(json.dumps(hostnames))
-        elif message["command"] == "logoff":
+        socks = set()
+        for key, client in clients.items():
+            if client["hostname"] in message["targets"]:
+                socks.add(key)
+        if message["command"] == "logoff":
             data = {"action": "logoff"}
-            if "targets" in message:
-                for sock, client in clients.pairs():
-                    if client["hostname"] in message["targets"]:
-                        await sock.send(json.dumps(data))
-            else:
-                woadmin = list(clients.keys())
-                if admin["hostname"] in woadmin:
-                    woadmin.remove(admin["hostname"])
-                websockets.broadcast(woadmin, json.dumps(data))
+            websockets.broadcast(socks, json.dumps(data))
 
 async def main():
     await websockets.serve(handle_client, "localhost", 3000)
