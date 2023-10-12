@@ -3,6 +3,9 @@ import websockets
 import json
 from schema import SchemaError
 from shared import initial_schema, command_server_schema, command_client_schema
+import os
+
+password = os.environ["PASSWORD"]
 
 clients = {}
 
@@ -19,7 +22,7 @@ async def handle_client(websocket, _path):
             del clients[websocket]
 
         elif data["mode"] == "admin":
-            if data["password"] == "password":
+            if data["password"] == password:
                 await websocket.send("authorised")
                 await handle_admin(websocket, client)
             else:
