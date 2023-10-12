@@ -22,9 +22,10 @@ async def connect_and_reconnect():
                     try:
                         data = json.loads(message)
                         data = command_client_schema.validate(data)
-                        if data["command"] == "logoff":
+                        if data["command"] == "logout":
                             force = 1
-                            if "force" in data["args"]:
+
+                            if "args" in data and "force" in data["args"]:
                                 force = 0
                             system(f"qdbus-qt5 org.kde.ksmserver /KSMServer logout {force} 0 1")
                         elif data["command"] == "ls":
@@ -36,6 +37,7 @@ async def connect_and_reconnect():
                         print("JSON Error: {e}")
                     except SchemaError as e:
                         print("Schema Error: {e}")
+                        # Shouldnt trust the server
 
         except websockets.ConnectionClosedError:
             print("Connection to the server closed.")

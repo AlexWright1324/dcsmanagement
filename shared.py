@@ -25,11 +25,11 @@ initial_schema = Schema(Or({
 
 command_client_schema = Schema({
     "command": str,
-    "args": Optional([str])
+    Optional("args"): [str]
 })
 
 command_server_schema = Schema({
-    "targets": [str],
+    Optional("targets"): [str],
     "command": command_client_schema
 })
 

@@ -20,8 +20,10 @@ async def handle_client(websocket, _path):
 
         elif data["mode"] == "admin":
             if data["password"] == "password":
+                await websocket.send("authorised")
                 await handle_admin(websocket, client)
             else:
+                print("Invalid password from {client['hostname']}")
                 await websocket.send("unauthorised")
 
         print(f"{client['hostname']} disconnected")
@@ -48,28 +50,29 @@ async def handle_admin(websocket, admin):
             message = json.loads(message)
             message = command_server_schema.validate(message)
             command = message["command"]
-            command = command_client.validate(command)
+            command = command_client_schema.validate(command)
             if "targets" in message:
                 socks = set()
                 for key, client in clients.items():
                     if client["hostname"] in message["targets"]:
                         socks.add(key)
-                await websockets.broadcast(socks, json.dumps(command))
-	    elif command["command"] == "listclients":
+                websockets.broadcast(socks, json.dumps(command))
+            elif command["command"] == "listclients":
                 hostnames = {"hostnames": [i["hostname"] for i in clients.values()]}
                 await websocket.send(json.dumps(hostnames))
 
         except json.JSONDecodeError as e:
-            print("Invalid JSON from {client['hostname']}: {e}")
+            print("Invalid JSON from {admin['hostname']}: {e}")
 
         except SchemaError as e:
-            print(f"Schema Error from {client['hostname']}: {e}")
+            print(f"Schema Error from {admin['hostname']}: {e}")
 
         except Exception as e:
-            print(f"Error from {client['hostname']}: {e}")
+            print(f"Error from {admin['hostname']}: {e}")
 
 async def main():
-    await websockets.serve(handle_client, "0.0.0.0", 3000)
-
+    async with websockets.serve(handle_client, "0.0.0.0", 3000):
+        await asyncio.Future()
+    
 if __name__ == "__main__":
     asyncio.run(main())
