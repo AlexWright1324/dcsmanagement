@@ -27,7 +27,5 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/user/app:latest
-            ghcr.io/user/app:1.0.0
+          tags: ghcr.io/AlexWright1324/dcsmanagement:latest
     permissions: write-all
