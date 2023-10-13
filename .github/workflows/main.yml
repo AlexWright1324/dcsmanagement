@@ -30,3 +30,6 @@ jobs:
           tags: |
             ghcr.io/user/app:latest
             ghcr.io/user/app:1.0.0
+    permissions:
+      contents: read
+      packages: write
