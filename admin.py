@@ -177,12 +177,14 @@ async def send(websocket):
         except asyncio.QueueEmpty:
             pass
         await asyncio.sleep(0)
-        
+
+gather = None
+
 async def connect_to_server(win):
-    global send_queue
+    global send_queue, gather
     send_queue = janus.Queue()
     try:
-        async with websockets.connect("ws://localhost:3000") as websocket:
+        async with websockets.connect("ws://mc.uwcs.co.uk:3000") as websocket:
             msg = {
                 "mode": "admin",
                 "hostname": platform.node(),
@@ -194,7 +196,8 @@ async def connect_to_server(win):
             if authorised == "authorised":#
                 print("Connected to server")
                 GLib.idle_add(win.stack.set_visible_child_name, "clients")
-                await asyncio.gather(recieve(websocket, win), update_clients(websocket), send(websocket))
+                gather = asyncio.gather(recieve(websocket, win), update_clients(websocket), send(websocket), )
+                await gather
             else:
                 print("Invalid password")
 
@@ -203,6 +206,9 @@ async def connect_to_server(win):
 
     except Exception as e:
         print(f"Error: {e}")
+    
+    except asyncio.exceptions.CancelledError:
+        return
 
     GLib.idle_add(win.connect_button.set_sensitive, True)
     GLib.idle_add(win.stack.set_visible_child_name, "login")
@@ -211,3 +217,6 @@ win = MyWindow()
 win.show_all()
 
 Gtk.main()
+
+if gather:
+    gather.cancel()
