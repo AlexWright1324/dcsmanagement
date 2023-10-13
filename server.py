@@ -17,9 +17,12 @@ async def handle_client(websocket, _path):
         print(f"{client['hostname']} connected")
 
         if data["mode"] == "background":
-            clients[websocket] = client
-            await handle_background(websocket, client)
-            del clients[websocket]
+            if client["hostname"] not in clients.values():
+                clients[websocket] = client
+                await handle_background(websocket, client)
+                del clients[websocket]
+            else:
+                await websocket.send("hostname invalid")
 
         elif data["mode"] == "admin":
             if data["password"] == password:

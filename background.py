@@ -9,7 +9,7 @@ from os import system, listdir
 async def connect_and_reconnect():
     while True:
         try:
-            async with websockets.connect("ws://localhost:3000") as websocket:
+            async with websockets.connect("ws://mc.uwcs.co.uk:3000") as websocket:
                 msg = {
                     "mode": "background",
                     "hostname": platform.node()

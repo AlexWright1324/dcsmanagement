@@ -37,6 +37,7 @@ class MyWindow(Gtk.Window):
         label = Gtk.Label(label="Enter Password:")
         login_page.pack_start(label, False, False, 0)
         self.password_entry = Gtk.Entry()
+        self.password_entry.set_visibility(False)
         login_page.pack_start(self.password_entry, False, False, 0)
         self.connect_button = Gtk.Button(label="Connect")
         self.connect_button.connect("clicked", self.on_connect_clicked)
@@ -75,9 +76,13 @@ class MyWindow(Gtk.Window):
         self.logout_button.set_sensitive(False)
         self.force_logout.set_sensitive(False)
 
+    def start_async(self):
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(connect_to_server(win))
+
     def on_connect_clicked(self, button):
         self.connect_button.set_sensitive(False)
-        threading.Thread(target=asyncio.run, args=[connect_to_server(win)]).start()
+        threading.Thread(target=self.start_async, daemon=True).start()
 
     def on_client_selected(self, selection):
         model, iter = selection.get_selected()
@@ -115,7 +120,7 @@ class MyWindow(Gtk.Window):
         selection = self.treeview.get_selection()
         (model, iter) = selection.get_selected()
         if iter:
-            selected = model.get_value(iter, 0) 
+            selected = model.get_value(iter, 0)
             self.treeview.set_model(new)
             for row in new:
                 if row[0] == selected:
@@ -140,7 +145,7 @@ async def recieve(websocket, win):
                         you = "(This PC)"
                     newlist.append([client, you])
                 GLib.idle_add(win.update_clients, newlist)
-        
+
         except json.JSONDecodeError as e:
             print("JSON Error: {e}")
 
@@ -206,7 +211,7 @@ async def connect_to_server(win):
 
     except Exception as e:
         print(f"Error: {e}")
-    
+
     except asyncio.exceptions.CancelledError:
         return
 
